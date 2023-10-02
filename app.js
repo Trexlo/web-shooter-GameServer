@@ -1207,8 +1207,8 @@ SocketServer.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log('listening on '+IP+":"+PORT);
+server.listen(process.env.PORT, () => {
+  console.log('listening on '+IP+":"+process.env.PORT);
 });
 var clock = new THREE.Clock();
 var debugDelta = 0;
