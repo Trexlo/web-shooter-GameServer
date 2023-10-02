@@ -1,9 +1,9 @@
 {
     "port":"10000",
-    "ip":"127.0.0.1",
+    "ip":"3.75.158.163",
     "masterServerPort":"3000",
     "masterServerIP":"127.0.0.1",
-    "overrideAddress":false,
+    "overrideAddress":true,
     "configuration":{
         "sendingFrequency": 60
     },
