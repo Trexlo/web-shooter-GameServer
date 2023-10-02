@@ -1,6 +1,6 @@
 {
     "port":"10000",
-    "ip":"3.75.158.163",
+    "ip":"https://web-shooter-gameserver.onrender.com",
     "masterServerPort":"3000",
     "masterServerIP":"127.0.0.1",
     "overrideAddress":true,

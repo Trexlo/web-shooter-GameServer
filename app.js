@@ -1152,6 +1152,7 @@ SocketServer.on('connection', (socket) => {
     callback(mapData)
   });
   socket.on("ping", (callback) => {
+    console.log("PONG");
     callback();
   });
   socket.on("startGame", (data)=>{
