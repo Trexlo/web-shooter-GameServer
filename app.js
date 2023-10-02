@@ -21,7 +21,7 @@ const MASTERIP = (serverConfig)? serverConfig.masterServerIP : "localhost";
 const SocketServer = new Server(server, {
   // @ts-ignore
   cors: true,
-  origins:["*"],
+  origins:["https://*"],
   // allowRequest: (req, callback) => {
   //   const noOriginHeader = req.headers.origin === undefined;
   //   callback(null, true);
