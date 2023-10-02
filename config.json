@@ -1,0 +1,34 @@
+{
+    "port":"5000",
+    "ip":"127.0.0.1",
+    "masterServerPort":"3000",
+    "masterServerIP":"127.0.0.1",
+    "overrideAddress":true,
+    "configuration":{
+        "sendingFrequency": 60
+    },
+    "startConfig":{
+        "enemy":{  
+            "maxHealth":8,
+            "minHealth":3,
+            "minSpeed":2,
+            "maxSpeed":6,
+            "minDamage":10,
+            "maxDamage":35
+        },
+        "player":{
+            "ammo":90,
+            "mag":30,
+            "maxHealth":100,
+            "speed":5,
+            "damage":10,
+            "magSize":30,
+            "firerate":0.4,
+            "reloadingTime":0.8
+        },
+        "pickups":{
+            "ammo":30,
+            "health":50
+        }
+    }
+}
