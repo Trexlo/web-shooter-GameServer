@@ -33,7 +33,8 @@ const SocketClient = io("wss://web-shooter-webserver.onrender.com",{
     type:"server",
     port:PORT,
     ip:IP,
-    overrideAddress:serverConfig.overrideAddress
+    overrideAddress:serverConfig.overrideAddress,
+    usePort:serverConfig.usePort
   },
 });
 

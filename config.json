@@ -4,6 +4,7 @@
     "masterServerPort":"3000",
     "masterServerIP":"127.0.0.1",
     "overrideAddress":true,
+    "usePort":false,
     "configuration":{
         "sendingFrequency": 60
     },
