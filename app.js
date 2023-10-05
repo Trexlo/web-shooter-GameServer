@@ -1210,6 +1210,14 @@ SocketServer.on('connection', (socket) => {
 server.listen(process.env.PORT, () => {
   console.log('listening on '+IP+":"+process.env.PORT);
 });
+server.on('request', function(req, res) {
+  // see all incoming requests here
+  if (req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.write("Game server is running");
+      res.end();
+  }
+});
 var clock = new THREE.Clock();
 var debugDelta = 0;
 
