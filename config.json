@@ -5,6 +5,7 @@
     "masterServerIP":"127.0.0.1",
     "overrideAddress":true,
     "usePort":false,
+    "secure":true,
     "configuration":{
         "sendingFrequency": 60
     },

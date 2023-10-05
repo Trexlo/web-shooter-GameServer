@@ -34,7 +34,8 @@ const SocketClient = io("wss://web-shooter-webserver.onrender.com",{
     port:PORT,
     ip:IP,
     overrideAddress:serverConfig.overrideAddress,
-    usePort:serverConfig.usePort
+    usePort:serverConfig.usePort,
+    secure:serverConfig.secure,
   },
 });
 
@@ -1207,8 +1208,8 @@ SocketServer.on('connection', (socket) => {
   });
 });
 
-server.listen(process.env.PORT, () => {
-  console.log('listening on '+IP+":"+process.env.PORT);
+server.listen(process.env.PORT || 5000, () => {
+  console.log('listening on '+IP+":"+(process.env.PORT || 5000));
 });
 server.on('request', function(req, res) {
   // see all incoming requests here
