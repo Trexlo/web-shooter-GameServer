@@ -1214,7 +1214,7 @@ server.listen(process.env.PORT || 5000, () => {
 server.on('request', function(req, res) {
   // see all incoming requests here
   if (req.url === '/') {
-      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.writeHead(200, { 'Content-Type': 'text/html', 'Access-Control-Allow-Origin': '*' });
       res.write("Game server is running");
       res.end();
   }
