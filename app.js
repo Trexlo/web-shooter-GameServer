@@ -27,7 +27,7 @@ const SocketServer = new Server(server, {
   //   callback(null, true);
   // },
 });
-
+//connect client to master server
 const SocketClient = io("wss://web-shooter-webserver.onrender.com",{
   query:{
     type:"server",
@@ -80,13 +80,13 @@ var startConfig = serverConfig.startConfig;
 //   }
 // }
 var upgrades = {
-  speed:(s)=>     Math.trunc((s*1.02)*100)/100,
+  speed:(s)=>     Math.trunc((s*1.025)*100)/100,
   firerate:(f)=>  Math.trunc((f/1.1)*100)/100,
   maxHealth:(h)=> h+30,
   magSize:(m)=>   m+10,
   damage:(d)=>    d+10,
 }
-
+//
 var cachedMaps = [];
 
 class Pickup{
@@ -157,8 +157,8 @@ class Enemy extends Character{
       }
 
     });
-    if(spawnNode==null){
-        var spawnPoint = game.nodes.filter(n => { 
+    if(spawnNode==null){//set spawn point
+        var spawnPoint = game.nodes.filter(n => { //filter all nodes that are far away from all players (between 30 and 50 units radius)
           for(let p of game.players.values()){
             if(p.position.distanceTo(new THREE.Vector3(n.center.x, 0, n.center.z))<30 || p.position.distanceTo(new THREE.Vector3(n.center.x, 0, n.center.z))>50){
               return false;
@@ -168,7 +168,7 @@ class Enemy extends Character{
         
       });
       
-      if(spawnPoint.length==0){
+      if(spawnPoint.length==0){//if no nodes available spawn away from players
         spawnPoint = game.nodes.filter(n => { 
           for(let p of game.players.values()){
             if(p.position.distanceTo(new THREE.Vector3(n.center.x, 0, n.center.z))<30){
@@ -181,13 +181,15 @@ class Enemy extends Character{
       }
       spawnNode = spawnPoint[Math.floor(Math.random() * spawnPoint.length)];
     }
-    if(spawnNode == null){
+    if(spawnNode == null){//no available spawn nodes - spawn in a random node
       spawnNode = game.nodes[Math.floor(Math.random() * game.nodes.length)];
     }
+    //set position in spawn node
     this.position = new THREE.Vector3().random().multiply(new THREE.Vector3(spawnNode.x2-spawnNode.x1, 0, spawnNode.z2-spawnNode.z1)).add(new THREE.Vector3(spawnNode.box.min.x,0,spawnNode.box.min.z));
     // this.position = new THREE.Vector3(myNode.center.x, 0, myNode.center.z);
     this.currentNode = spawnNode;
     //this.game.enemies.filter(e=> e.currentNode.id == this.currentNode.id && e.target!=null)
+
     //diceroll attributes;
     var attrPoints = 100;
     var speed= THREE.MathUtils.clamp(Math.trunc((Math.random()*attrPoints)), 10, 60);
@@ -212,7 +214,7 @@ class Enemy extends Character{
     this.seekTimer.start();
     this.seekTimer.elapsedTime=10;
   }
-  generateInSameNode(){
+  generateInSameNode(){//creates another enemy in the same node
     var x = {...this};
     x.position = new THREE.Vector3().random().multiply(new THREE.Vector3(x.currentNode.x2-x.currentNode.x1, 0, x.currentNode.z2-x.currentNode.z1)).add(new THREE.Vector3(x.currentNode.box.min.x,0,x.currentNode.box.min.z));
     // this.position = new THREE.Vector3(myNode.center.x, 0, myNode.center.z);
@@ -247,6 +249,10 @@ class Enemy extends Character{
     attackRate:1.2,
     size:new THREE.Vector3(1,2,1)
   }
+  /**
+   * Find nearest player
+   * @param {Player[]} players  - all players in the game
+   * */
   findTarget(players){
     var minVal
     var minT=null;
@@ -262,6 +268,11 @@ class Enemy extends Character{
       this.target = minT;
     }
   }
+  /**
+   * Moves the enemy toward its target
+   * Generates a path
+   * @param {Number} delta - time elapsed in seconds 
+   */
   move(delta){
     if(this.attacking)return;
     if(this.seekTimer.getElapsedTime() >= 10 || this.target.dead){
@@ -321,11 +332,12 @@ class Enemy extends Character{
         this.pathTraveled=0;
     }
     var t= new THREE.Vector3(0,0,0);
+    //in line of sight - move towards the target
     if(isInLineOfSight || this.currentNode.id == this.targetCurrentNode.id){
       t = new THREE.Vector3().subVectors(this.target.position, this.position).setLength(this.attributes.speed*delta);
       this.pathCurve = null;
       this.path = null;
-    }else if(this.pathCurve!=null){
+    }else if(this.pathCurve!=null){// not in line of sight - move to the next point on the generated path
       this.pathTraveled+=this.attributes.speed*delta;
       var nxtPoint = this.pathCurve.getPointAt(THREE.MathUtils.clamp(this.pathTraveled/this.pathCurve.getLength(),0,1));
       t = new THREE.Vector3(nxtPoint.x, 0, nxtPoint.y).sub(this.position);
@@ -336,6 +348,7 @@ class Enemy extends Character{
     if(!this.attributes.size)this.attributes.size = new THREE.Vector3(1,2,1);
     this.model.geometry.boundingBox.setFromCenterAndSize(this.position, this.attributes.size);
 
+    //check if node switched to remove from path
     var node = this.game.nodes.find(n=>  this.position.x >= n.x1  && this.position.x <= n.x2  && this.position.z >= n.z1  && this.position.z <= n.z2)
     if(node!= undefined && this.currentNode.id != node.id){
 
@@ -348,6 +361,10 @@ class Enemy extends Character{
     this.currentNode = (node == undefined)?this.currentNode:node;
 
   }
+  /**
+   * Attacks the target if near it
+   * @param {Number} delta - time elapsed in seconds 
+   */
   attack(delta){
     if(!this.attacking){
       if(this.position.distanceTo(this.target.position)<0.75){
@@ -359,6 +376,11 @@ class Enemy extends Character{
         this.attackCheck(delta);
     }
   }
+  /**
+   * Checks if enough time has passed to attack the target
+   * If the target is still near the attack point then it is damaged
+   * @param {Number} delta - time elapsed in seconds 
+   */
   attackCheck(delta){
     this.attackDelta+=delta;
     //time elapsed is greater than set
@@ -384,10 +406,18 @@ class Enemy extends Character{
 
     }
   }
+  /**
+   * Sets health
+   */
   setHP=()=>{
     this.health=this.attributes.maxHealth;
   }
-
+  /**
+   * Removes health from this enemy and gives point to the attacker
+   * Sets enemy death flag
+   * @param {Number} damage - damage amount
+   * @param {Player} attacker - The attacker
+   */
   takeDamage(damage, attacker){
     this.health-=damage;
     if(this.health>=0) attacker.points+=damage;
@@ -396,7 +426,10 @@ class Enemy extends Character{
     if(this.dead) attacker.kills++;
   }
 
-  //send only required data
+  /**
+   * send only required data to the socket
+   * @returns data
+   */
   convertToSendableData(){
     return {
       id: this.id,
@@ -418,6 +451,10 @@ class Enemy extends Character{
       path:this.pathCurve,
     }
   }
+  /**
+   * Gets all the data needed for a save file
+   * @returns save data
+   */
   getSaveData(){
     return {
       id: this.id,
@@ -437,6 +474,11 @@ class Enemy extends Character{
       dead: this.dead,
     }
   }
+  /**
+   * Loads the save data into the enemy
+   * @param {*} data - save data 
+   * @returns 
+   */
   load(data){
     if(data==undefined)return;
     this.id = data.id;
@@ -459,6 +501,7 @@ const directions={
   left: new THREE.Vector3().set(-direction.x, direction.y, direction.z),
   right: new THREE.Vector3().set(direction.x, direction.y, -direction.z),
 }
+
 class Player extends Character{
   nickname;
   number;
@@ -522,6 +565,9 @@ class Player extends Character{
     firerate: startConfig.player.firerate,// attack/second
     reloadingTime: startConfig.player.reloadingTime,
   }
+  /**
+   * Returns data that does not change during the game
+   */
   getStaticData(){
     return {
       nickname: this.nickname,
@@ -529,7 +575,11 @@ class Player extends Character{
       color: this.color,
     }
   }
-  //send only required data
+ 
+  /**
+   * send only required data to the socket
+   * @returns data
+   */
   convertToSendableData(){
     //send shots and clear them
     var sendShots = this.shots.splice(0, this.shots.length);
@@ -559,6 +609,10 @@ class Player extends Character{
     }
     
   }
+  /**
+   * Gets all the data needed for a save file
+   * @returns save data
+   */
   getSaveData(){
     return {
       id: this.id,
@@ -585,6 +639,11 @@ class Player extends Character{
       dead: this.dead,
     }
   }
+  /**
+   * Loads the save data into the enemy
+   * @param {*} data - save data 
+   * @returns 
+  */
   load(data){
     if(data==undefined)return;
     this.id = data.id
@@ -605,15 +664,28 @@ class Player extends Character{
     var node = this.game.nodes.find(n=>  this.position.x >= n.x1  && this.position.x <= n.x2  && this.position.z >= n.z1  && this.position.z <= n.z2)
     this.currentNode = (node == undefined)?this.currentNode:node;
   }
+  /**
+   * Sets connected flag
+   */
   connect(){
     this.connected = true;
   }
+  /**
+   * Sets connected flag
+   */
   disconnect(){
     this.connected = false;
   }
+  /**
+   * Sets ready flag
+   */
   setReady(ready){
     this.ready = ready;
   }
+  /**
+   * Upgrades an attribute and removes points from the player
+   * @param {String} type - the type to upgrade 
+   */
   upgrade(type){
     switch(type){
       case 'speed':{
@@ -641,7 +713,9 @@ class Player extends Character{
       }break;
     }
   }
-
+  /**
+   * Refills ammo in the mag and removes total ammo
+   */
   reload(){
     var toReload = (this.attributes.magSize-this.mag);
     var toGive = (toReload>=this.ammo)?this.ammo:toReload;
@@ -651,21 +725,43 @@ class Player extends Character{
     this.reloadingClock.stop();
     this.attackTimer.start();
   }
-
+  /**
+   * Adds ammo
+   * @param {Number} diff - ammo amount 
+   */
   addAmmo(diff){
     this.ammo+=diff;
   }
+  /**
+   * Adds the health difference to the player
+   * Sets death flag
+   * @param {Number} diff - health amount 
+   */
   changeHP(diff){
     this.health+=diff;
     if(this.health > this.attributes.maxHealth) this.health = this.attributes.maxHealth;
     this.dead = this.health<=0;
   }
+  /**
+   * Adds points
+   * @param {Number} diff - point amount 
+   */
   addPoints(diff=2){
     this.points+=diff;
   }
+    /**
+   * Adds kills
+   * @param {Number} diff - kill amount 
+   */
   addKills(){
     this.kills++;
   }
+  /**
+   * Executes actions that the user sets
+   * Reloading and moving
+   * Checks for collision during movement
+   * @param {Number} delta - time difference in seconds 
+   */
   executeActions(delta){
     if(this.actions.reload && this.mag != this.attributes.magSize){
       this.reloading = true;
@@ -721,8 +817,15 @@ class Player extends Character{
       this.reload();
     }
   }
+  /**
+   * Executes attack action
+   * Summons a line in the direction the user is facing
+   * Checks for collision along the line and if the target is an enemy it takes damage
+   * Generates an attack if total time elapsed is greater than firerate
+   * @param {Number} delta - time difference in seconds 
+   */
   attack(delta){
-    
+    //total time elapsed
     this.attackDelta+=delta;
     if(this.actions.fire && !this.reloading && this.mag>0){
       while(this.attackDelta >= this.attributes.firerate){
@@ -779,7 +882,6 @@ class Player extends Character{
     }
   }
 }
-console.log();
 
 class Node{
   constructor(id, position,neighbours, box) {
@@ -797,7 +899,7 @@ class Node{
 class Game{
   constructor(id, map) {
     console.log("created lobby "+id);
-    console.log(map);
+    //console.log(map);
     this.id = id;
     this.map = map;
     this.type = map.type;
@@ -830,9 +932,13 @@ class Game{
   clock = new THREE.Clock();
   gameTime = 0;
   packetNumber = 0;
+  /**
+   * Sets the players and their spawn points.
+   * @param {Player[]} players 
+   */
   setPlayers(players){
     console.log("these can play");
-    console.log(players);
+    console.log(players.map(p=>p.nickname));
     for(let p of players){
       var model = playermodel.children[0].clone();
       var spawnPoint;
@@ -842,6 +948,9 @@ class Game{
       this.players.set(p.id, newPlayer);
     }
   }
+  /**
+   * Starts the game and the main game loop
+   */
   start(){
     SocketServer.in(this.id).emit("start", {paused:this.paused});
 
@@ -859,17 +968,32 @@ class Game{
     }, 1000/this.executionFrequency);
     console.log("started "+this.id);
   }
+  /**
+   * Pauses the game
+   * @param {String} reason 
+   */
   pause(reason="Game paused"){
     this.paused = true;
     SocketServer.in(this.id).emit("pause", {paused:true, message:reason});
   }
+  /**
+   * Unpauses the game
+   */
   unpause(){
     this.paused = false;
     SocketServer.in(this.id).emit("pause", {paused:false});
   }
+  /**
+   * Changes execution frequency
+   * @param {Number} delta - difference in time
+   */
   changeFrequency(delta){
     this.executionFrequency+=delta;
   }
+  /**
+   * Saves the game state
+   * @returns saved game data
+   */
   saveGame(){
     return {
       mapId: this.map.id,
@@ -880,9 +1004,14 @@ class Game{
       enemyWave: this.enemyWave
     }
   } 
+  /**
+   * Loads the game save
+   * @param {*} data save data
+   * @param {*} players players
+   */
   loadSave(data, players){
     console.log("loading");
-    console.log(data);
+    //console.log(data);
     for(let p of data.players){
       var thePlayer = players.find(x=> x.id==p.id)
       if(thePlayer == undefined){
@@ -904,6 +1033,10 @@ class Game{
     this.enemyWave = data.enemyWave;
     this.enemySpawnDelta = data.enemySpawnDelta;
   }
+  /**
+   * Main game loop
+   * spawns enemies, executes player actions, checks if goal is reached/all players are dead
+   */
   serverFunc() {
 
     var deltaTime =  this.clock.getDelta();
@@ -991,7 +1124,13 @@ class Game{
       debugDelta=0;
     }
   }
-
+  /**
+   * Generate path using astar between nodes
+   * During generation if it collides with a node on an existing path joins the rest of the path if the colliding path has the same goal node 
+   * @param {Number} fromNode - node id 
+   * @param {Number} goalNode - node id 
+   * @returns 
+   */
   astar(fromNode, goalNode){
 
     var sameGoalEnemies = this.enemies.filter(e=> (e.path != undefined && e.path != null) && e.path.length>1 && e.path[0]==goalNode);
@@ -1047,7 +1186,7 @@ class Game{
 var games = new Map();
 SocketServer.on('connection', (socket) => {
   console.log('a user connected');
-  console.log(socket);
+  //console.log(socket);
   console.log(socket.handshake.query);
   console.log(socket.handshake.query.gameId);
   console.log(socket.handshake.query.playerId);
@@ -1078,7 +1217,7 @@ SocketServer.on('connection', (socket) => {
   });
   socket.on("pause",(data) => {
     var game = games.get(socket.handshake.query.gameId);
-    console.log(data);
+    //console.log(data);
     if(game != undefined){
       if(data.paused)game.pause(game.players.get(socket.handshake.query.playerId).nickname+" paused the game.");
       else game.unpause();
@@ -1086,7 +1225,7 @@ SocketServer.on('connection', (socket) => {
   });
   socket.on("saveGame",(data, callback) => {
     var game = games.get(data.gameId);
-    console.log(data);
+    //console.log(data);
     if(game != undefined){
       if(game.paused){
         callback({error:false,data: game.saveGame()})
@@ -1115,7 +1254,7 @@ SocketServer.on('connection', (socket) => {
       cachedMaps.push(cachedMaps.splice(cachedMaps.findIndex(x=> x.id == data.mapId && x.version == data.mapVersion), 1)[0]);
       mapData = map.data;
     }
-    console.log(map);
+    //console.log(map);
     games.set(data.id, new Game(data.id, mapData));
     games.get(data.id).setPlayers(data.players)
     callback();
@@ -1132,14 +1271,14 @@ SocketServer.on('connection', (socket) => {
       console.log("found map in cache");
       mapData = map.data;
     }
-    console.log(map);
+    //console.log(map);
     games.set(data.id, new Game(data.id, mapData));
     games.get(data.id).loadSave(data.loadData, data.players);
     callback();
   });
   socket.on("requestData", (data, callback)=>{
     console.log("reqda");
-    console.log(data);
+    //console.log(data);
     var mapData = {};
     var game = games.get(socket.handshake.query.gameId);
 
